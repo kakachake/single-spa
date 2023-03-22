@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <body>
+    <script>
+      function go(url) {
+        history.pushState({}, null, url);
+      }
+    </script>
+    <a onclick="go('#/a')">a</a>
+    <a onclick="go('#/b')">b</a>
+    <a href="#/a">a</a>
+    <a href="#/b">b</a>
+    <div id="app_1"></div>
+    <div id="app_2"></div>
+    <!-- <script src="https://cdn.bootcdn.net/ajax/libs/single-spa/5.9.4/umd/single-spa.min.js"></script> -->
+    <script type="module">
+      // 微前端  就是可以加载不同的应用  基于路由的微前端
+
+      // 如何接入已经写好的应用 对于singlespa来说，需要改写子应用（接入协议）（bootstrap、mount、unmount）
+      // /a  /b
+      // const { registerApplication, start } = singleSpa;
+      import { registerApplication, start } from "./dist/index.js";
+
+      let app1 = {
+        bootstrap: [
+          async () => console.log("app1 bootstrap1"),
+          async () => console.log("app1 bootstrap2"),
+        ],
+        mount: async () => {
+          // new Vue().$mount()
+          console.log("app1 mount");
+          app_1.innerHTML = "app1";
+        },
+        unmount: async () => {
+          console.log("app1 unmount");
+          app_1.innerHTML = "";
+        },
+      };
+
+      let app2 = {
+        bootstrap: async () => console.log("app2 bootstrap2"),
+        mount: async () => {
+          // new Vue().$mount()
+          return new Promise((resolve, reject) => {
+            setTimeout(() => {
+              console.log("app2 mount");
+              app_2.innerHTML = "app2";
+              resolve();
+            }, 1000);
+          });
+        },
+        unmount: async () => {
+          console.log("app2 unmount");
+          app_2.innerHTML = "";
+        },
+      };
+
+      // 注册应用，就是看一下路径是否匹配，如果匹配，则“加载”对应的应用
+      registerApplication(
+        "a",
+        async () => {
+          console.log("register app1");
+          return app1;
+        },
+        //
+        (location) => location.hash.startsWith("#/a")
+      );
+      registerApplication(
+        "b",
+        async () => {
+          console.log("register app2");
+          return app2;
+        },
+        //
+        (location) => location.hash.startsWith("#/b")
+      );
+
+      // 开启路径的监控，路径切换的时候，可以调用对应的mount，unmount方法
+      start();
+    </script>
+    <!-- <script>
+      function d(exports, definition) {
+        Object.keys(definition).forEach((key) => {
+          Object.defineProperty(exports, key, {
+            enumerable: true,
+            get: definition[key],
+          });
+        });
+      }
+      function load(module, exports) {
+        let a = 1;
+        setInterval(() => {
+          a++;
+        }, 500);
+
+        // exports.a = a;
+        d(exports, {
+          a: () => a,
+        });
+      }
+
+      function require() {
+        let a = 1;
+        const module = {
+          exports: {},
+        };
+
+        load(module, module.exports);
+        return module.exports;
+      }
+
+      const o = require();
+      setInterval(() => {
+        console.log(o.a);
+      }, 1000);
+    </script> -->
+  </body>
+</html>
